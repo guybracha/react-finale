@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import SearchBar from './SearchBar';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 const apiUrl = 'https://randomuser.me/api/?results=10&seed=abc';
 
@@ -17,7 +19,7 @@ function EmployeeList() {
         }
         const data = await response.json();
         setEmployees(data.results);
-        setFilteredEmployees(data.results); // Initialize filtered employees with all employees
+        setFilteredEmployees(data.results);
       } catch (error) {
         console.error('Error fetching data: ', error);
       }
@@ -40,26 +42,23 @@ function EmployeeList() {
   };
 
   return (
-    <div className="employee-list">
-      <h2>Employee List</h2>
+    <div className="container">
+      <h2 className="my-4">Employee List</h2>
       <SearchBar onSearch={handleSearch} />
       <div className="row">
-        {filteredEmployees.map((employee, index) => (
-          <div key={employee.login.uuid} className="col-md-6 mb-3">
-            <div className="card">
+        {filteredEmployees.map((employee) => (
+          <div className="col-md-6" key={employee.login.uuid}>
+            <div className="card mb-4">
+              {employee.picture.thumbnail && (
+                <img src={employee.picture.large} className="card-img-top" alt={employee.name.first} />
+              )}
               <div className="card-body">
-                <div className="row align-items-center">
-                  <div className="col-auto">
-                    {employee.picture.thumbnail && (
-                      <img src={employee.picture.thumbnail} alt={employee.name.first} className="rounded-circle" />
-                    )}
-                  </div>
-                  <div className="col">
-                    <p className="mb-0">Name: {`${employee.name.title} ${employee.name.first} ${employee.name.last}`}</p>
-                    <p className="mb-0">Age: {employee.dob.age}</p>
-                    <p className="mb-0">Location: {`${employee.location.city}, ${employee.location.country}`}</p>
-                  </div>
-                </div>
+                <h5 className="card-title">{`${employee.name.title} ${employee.name.first} ${employee.name.last}`}</h5>
+                <p className="card-text">Age: {employee.dob.age}</p>
+                <p className="card-text">Location: {`${employee.location.city}, ${employee.location.country}`}</p>
+                <Link to={`/employee/${employee.login.uuid}`} className="btn btn-primary">
+                  More Details
+                </Link>
               </div>
             </div>
           </div>

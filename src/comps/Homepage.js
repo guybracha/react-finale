@@ -1,12 +1,17 @@
 import React from 'react';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import EmployeeList from './EmployeeList';
-import { Link } from 'react-router-dom';
+import EmployeeDetails from './EmployeeDetails';
 
-export default function Homepage() {
+function Homepage() {
   return (
-    <div className='container'>
-      <h1>Bracha workers</h1>
-      <EmployeeList />
-    </div>
+    <Router>
+      <Routes>
+        <Route path="/" element={<EmployeeList />} />
+        <Route path="/employee/:id" element={<EmployeeDetails />} />
+      </Routes>
+    </Router>
   );
 }
+
+export default Homepage;
