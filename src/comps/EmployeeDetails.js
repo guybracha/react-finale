@@ -13,18 +13,22 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
-const apiUrl = 'https://randomuser.me/api/?results=10&seed=abc';
+const primaryApiUrl = 'https://randomuser.me/api/?results=10&seed=google';
+const fallbackApiUrl = 'https://monkeys.co.il/api2/wo.php';
 
 function EmployeeDetails() {
   const { id } = useParams();
   const [employee, setEmployee] = useState(null);
-  const [additionalInfo, setAdditionalInfo] = useState(null); // State for additional employee info
-  const [favorites, setFavorites] = useState([]);
+  const [additionalInfo, setAdditionalInfo] = useState(null);
+  const [favorites, setFavorites] = useState(() => {
+    const storedFavorites = JSON.parse(localStorage.getItem('favorites')) || [];
+    return storedFavorites;
+  });
 
   useEffect(() => {
     const fetchEmployee = async () => {
       try {
-        const response = await fetch(apiUrl);
+        const response = await fetch(primaryApiUrl);
         if (!response.ok) {
           throw new Error('Network response was not ok');
         }
@@ -32,25 +36,27 @@ function EmployeeDetails() {
         const foundEmployee = data.results.find(emp => emp.login.uuid === id);
         setEmployee(foundEmployee);
       } catch (error) {
-        console.error('Error fetching data: ', error);
+        console.error('Error fetching data from primary API: ', error);
+        try {
+          const fallbackResponse = await fetch(fallbackApiUrl);
+          if (!fallbackResponse.ok) {
+            throw new Error('Network response was not ok');
+          }
+          const fallbackData = await fallbackResponse.json();
+          const foundEmployee = fallbackData.find(emp => emp.login.uuid === id);
+          setEmployee(foundEmployee);
+        } catch (fallbackError) {
+          console.error('Error fetching data from fallback API: ', fallbackError);
+        }
       }
     };
 
     fetchEmployee();
   }, [id]);
 
-  useEffect(() => {
-    const storedFavorites = JSON.parse(localStorage.getItem('favorites')) || [];
-    setFavorites(storedFavorites);
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem('favorites', JSON.stringify(favorites));
-  }, [favorites]);
-
   const loadAdditionalInfo = async () => {
     try {
-      const response = await fetch(apiUrl);
+      const response = await fetch(primaryApiUrl);
       if (!response.ok) {
         throw new Error('Network response was not ok');
       }
@@ -68,19 +74,21 @@ function EmployeeDetails() {
 
   const toggleFavorite = () => {
     const isFavorite = favorites.some(emp => emp.login.uuid === employee.login.uuid);
+    let updatedFavorites;
     if (isFavorite) {
-      const updatedFavorites = favorites.filter(emp => emp.login.uuid !== employee.login.uuid);
-      setFavorites(updatedFavorites);
+      updatedFavorites = favorites.filter(emp => emp.login.uuid !== employee.login.uuid);
     } else {
-      setFavorites([...favorites, employee]);
+      updatedFavorites = [...favorites, employee];
     }
+    setFavorites(updatedFavorites);
+    localStorage.setItem('favorites', JSON.stringify(updatedFavorites));
   };
 
   return (
     <div className="container">
       <h2 className="my-4">Employee Details</h2>
       <div className="card mb-4">
-        {employee.picture.medium && (
+        {employee.picture.large && (
           <img src={employee.picture.large} className="card-img-top" alt={employee.name.first} />
         )}
         <div className="card-body">
@@ -102,7 +110,7 @@ function EmployeeDetails() {
             </MapContainer>
           </div>
           <button
-            className={`btn ${favorites.some(emp => emp.login.uuid === employee.login.uuid) ? 'btn-success' : 'btn btn-primary mt-3'}`}
+            className={`btn ${favorites.some(emp => emp.login.uuid === employee.login.uuid) ? 'btn-success' : 'btn-outline-primary'} mt-3`}
             onClick={toggleFavorite}
           >
             {favorites.some(emp => emp.login.uuid === employee.login.uuid) ? 'Saved' : 'Save Favorite'}
