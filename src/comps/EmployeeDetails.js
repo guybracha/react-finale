@@ -18,6 +18,8 @@ const apiUrl = 'https://randomuser.me/api/?results=10&seed=abc';
 function EmployeeDetails() {
   const { id } = useParams();
   const [employee, setEmployee] = useState(null);
+  const [additionalInfo, setAdditionalInfo] = useState(null); // State for additional employee info
+  const [favorites, setFavorites] = useState([]);
 
   useEffect(() => {
     const fetchEmployee = async () => {
@@ -37,15 +39,48 @@ function EmployeeDetails() {
     fetchEmployee();
   }, [id]);
 
+  useEffect(() => {
+    const storedFavorites = JSON.parse(localStorage.getItem('favorites')) || [];
+    setFavorites(storedFavorites);
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('favorites', JSON.stringify(favorites));
+  }, [favorites]);
+
+  const loadAdditionalInfo = async () => {
+    try {
+      const response = await fetch(apiUrl);
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      const data = await response.json();
+      const foundEmployee = data.results.find(emp => emp.login.uuid === id);
+      setAdditionalInfo(foundEmployee);
+    } catch (error) {
+      console.error('Error fetching additional data: ', error);
+    }
+  };
+
   if (!employee) {
     return <div>Loading...</div>;
   }
+
+  const toggleFavorite = () => {
+    const isFavorite = favorites.some(emp => emp.login.uuid === employee.login.uuid);
+    if (isFavorite) {
+      const updatedFavorites = favorites.filter(emp => emp.login.uuid !== employee.login.uuid);
+      setFavorites(updatedFavorites);
+    } else {
+      setFavorites([...favorites, employee]);
+    }
+  };
 
   return (
     <div className="container">
       <h2 className="my-4">Employee Details</h2>
       <div className="card mb-4">
-        {employee.picture.large && (
+        {employee.picture.medium && (
           <img src={employee.picture.large} className="card-img-top" alt={employee.name.first} />
         )}
         <div className="card-body">
@@ -66,6 +101,24 @@ function EmployeeDetails() {
               </Marker>
             </MapContainer>
           </div>
+          <button
+            className={`btn ${favorites.some(emp => emp.login.uuid === employee.login.uuid) ? 'btn-success' : 'btn btn-primary mt-3'}`}
+            onClick={toggleFavorite}
+          >
+            {favorites.some(emp => emp.login.uuid === employee.login.uuid) ? 'Saved' : 'Save Favorite'}
+          </button>
+          <button className="btn btn-primary mt-3" onClick={loadAdditionalInfo}>
+            More Details
+          </button>
+          {additionalInfo && (
+            <div className="mt-3">
+              <h5>Additional Information</h5>
+              <p>Full Name: {`${additionalInfo.name.title} ${additionalInfo.name.first} ${additionalInfo.name.last}`}</p>
+              <p>Email: {additionalInfo.email}</p>
+              <p>Phone: {additionalInfo.phone}</p>
+              <p>Full Address: {`${additionalInfo.location.street.number} ${additionalInfo.location.street.name}, ${additionalInfo.location.city}, ${additionalInfo.location.state}, ${additionalInfo.location.country}, ${additionalInfo.location.postcode}`}</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

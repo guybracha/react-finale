@@ -1,14 +1,14 @@
 // App.js
 import React from 'react';
 import Homepage from './comps/Homepage';
-import { EmployeeProvider } from './context/EmployeeProvider';
+import { BrowserRouter } from 'react-router-dom';
 
 function App() {
   return (
     <div className="App">
-      <EmployeeProvider>
+      <BrowserRouter>
         <Homepage />
-      </EmployeeProvider>
+      </BrowserRouter>
     </div>
   );
 }
